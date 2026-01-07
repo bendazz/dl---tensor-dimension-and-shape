@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tensor Dimension & Shape Practice</title>
+  <style>
+    :root {
+      --bg: #0e1116;
+      --panel: #151a21;
+      --text: #e6edf3;
+      --muted: #9aa5b1;
+      --accent: #3fb950;
+      --accent-2: #2f81f7;
+      --border: #2d333b;
+      --code-bg: #0b0f14;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 24px auto 80px;
+      padding: 0 16px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin: 0;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin: 4px 0 0 0;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button {
+      background: var(--accent-2);
+      color: white;
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary { background: var(--panel); color: var(--text); }
+    button:hover { filter: brightness(1.05); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 220px;
+    }
+    .card-header {
+      padding: 12px 14px 0 14px;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin: 0 0 8px 0;
+    }
+    pre {
+      margin: 0;
+      padding: 12px 14px;
+      background: var(--code-bg);
+      color: #c9d1d9;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px 12px 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .answer { padding: 0 14px 14px 14px; display: none; }
+    .answer.visible { display: block; }
+    .answer p { margin: 6px 0; }
+    .pill {
+      display: inline-block;
+      background: #182030;
+      color: #bcd3ff;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.8rem;
+      margin-left: 6px;
+    }
+    .footer { color: var(--muted); font-size: 0.9rem; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Tensor Dimension & Shape Practice</h1>
+        <p class="sub">Read the PyTorch snippet, decide the tensor's dimension (rank) and shape, then reveal to check yourself.</p>
+      </div>
+      <div class="controls">
+        <button id="revealAll" class="secondary">Reveal All Answers</button>
+        <button id="hideAll" class="secondary">Hide All</button>
+        <button id="newSet">New Set</button>
+      </div>
+    </header>
+
+    <div class="grid" id="cards"></div>
+
+    <p class="footer">Tips: A 0-D tensor has shape [], 1-D is [N], 2-D is [N, M], and so on. Dimension = number of axes in the shape.</p>
+  </div>
+
+  <script>
+    // Generate 10 questions using only torch.tensor and small shapes
+    function generateQuestions() {
+      const dims = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4];
+      const out = [];
+      const shuffledDims = shuffle(dims);
+      for (let i = 0; i < shuffledDims.length; i++) {
+        const d = shuffledDims[i];
+        const q = makeQuestion(d, i + 1);
+        out.push(q);
+      }
+      return out;
+    }
+
+    function makeQuestion(dim, id) {
+      if (dim === 0) {
+        const val = randInt(-9, 9);
+        return {
+          id,
+          code: `import torch\n\nx = torch.tensor(${val})`,
+          dim: 0,
+          shape: []
+        };
+      }
+      if (dim === 1) {
+        const len = randInt(3, 7);
+        const arr = Array.from({ length: len }, () => randInt(-9, 9));
+        return makeTensorQuestion(id, arr);
+      }
+      if (dim === 2) {
+        const r = randInt(2, 3);
+        const c = randInt(2, 4);
+        const arr = Array.from({ length: r }, () => Array.from({ length: c }, () => randInt(-9, 9)));
+        return makeTensorQuestion(id, arr);
+      }
+      if (dim === 3) {
+        const a = randInt(1, 2);
+        const b = randInt(2, 3);
+        const c = randInt(2, 3);
+        const arr = Array.from({ length: a }, () =>
+          Array.from({ length: b }, () => Array.from({ length: c }, () => randInt(-9, 9)))
+        );
+        return makeTensorQuestion(id, arr);
+      }
+      // dim === 4
+      const p = randInt(1, 2);
+      const q = randInt(2, 3);
+      const r = randInt(2, 3);
+      const s = randInt(2, 3);
+      const arr4 = Array.from({ length: p }, () =>
+        Array.from({ length: q }, () =>
+          Array.from({ length: r }, () => Array.from({ length: s }, () => randInt(-9, 9)))
+        )
+      );
+      return makeTensorQuestion(id, arr4);
+    }
+
+    function makeTensorQuestion(id, arr) {
+      const shape = getShape(arr);
+      const code = `import torch\n\nx = torch.tensor(${JSON.stringify(arr)})`;
+      return { id, code, dim: shape.length, shape };
+    }
+
+    function getShape(x) {
+      if (!Array.isArray(x)) return [];
+      const shape = [];
+      let cur = x;
+      while (Array.isArray(cur)) {
+        shape.push(cur.length);
+        cur = cur[0];
+      }
+      return shape;
+    }
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function render() {
+      const cards = document.getElementById('cards');
+      cards.innerHTML = '';
+      const shuffled = shuffle(QUESTIONS);
+      shuffled.forEach((q, idx) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+
+        const header = document.createElement('div');
+        header.className = 'card-header';
+        header.innerHTML = `<p class="card-title">Question ${idx + 1} <span class="pill">PyTorch</span></p>`;
+
+        const pre = document.createElement('pre');
+        const code = document.createElement('code');
+        code.textContent = q.code;
+        pre.appendChild(code);
+
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+
+        const revealBtn = document.createElement('button');
+        revealBtn.textContent = 'Reveal Answer';
+
+        const hideBtn = document.createElement('button');
+        hideBtn.textContent = 'Hide';
+        hideBtn.className = 'secondary';
+
+        const answer = document.createElement('div');
+        answer.className = 'answer';
+        const shapeStr = `[${q.shape.join(', ')}]`;
+        answer.innerHTML = `
+          <p><strong>Dimension (rank):</strong> ${q.dim}</p>
+          <p><strong>Shape:</strong> ${shapeStr}</p>
+        `;
+
+        revealBtn.addEventListener('click', () => {
+          answer.classList.add('visible');
+        });
+        hideBtn.addEventListener('click', () => {
+          answer.classList.remove('visible');
+        });
+
+        actions.appendChild(revealBtn);
+        actions.appendChild(hideBtn);
+
+        card.appendChild(header);
+        card.appendChild(pre);
+        card.appendChild(actions);
+        card.appendChild(answer);
+
+        cards.appendChild(card);
+      });
+    }
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    document.getElementById('revealAll').addEventListener('click', () => {
+      document.querySelectorAll('.answer').forEach(a => a.classList.add('visible'));
+    });
+    document.getElementById('hideAll').addEventListener('click', () => {
+      document.querySelectorAll('.answer').forEach(a => a.classList.remove('visible'));
+    });
+
+    document.getElementById('newSet').addEventListener('click', () => {
+      QUESTIONS = generateQuestions();
+      render();
+    });
+    let QUESTIONS = generateQuestions();
+    render();
+  </script>
+</body>
+</html>
