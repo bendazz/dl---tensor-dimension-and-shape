@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>PyTorch Tensor Shape & Dimension Quiz</title>
+    <style>
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;padding:24px;background:#f7fafc;color:#0f172a}
+      header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+      h1{font-size:20px;margin:0}
+      button{background:#0ea5e9;border:none;color:white;padding:8px 12px;border-radius:6px;cursor:pointer}
+      .controls{display:flex;gap:8px}
+      .questions{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+      .card{background:white;padding:12px;border-radius:8px;box-shadow:0 1px 2px rgba(2,6,23,0.08)}
+      pre{background:#0f172a;color:#f8fafc;padding:10px;border-radius:6px;overflow:auto}
+      .meta{display:flex;align-items:center;gap:8px;margin-top:8px}
+      .answer{margin-top:8px;padding:8px;background:#f1f5f9;border-radius:6px;display:none}
+      .small{font-size:13px;color:#475569}
+      footer{margin-top:18px;color:#475569}
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>PyTorch Tensor Shape & Dimension Quiz</h1>
+      <div class="controls">
+        <button id="regen">Generate 10 New Questions</button>
+      </div>
+    </header>
+
+    <p class="small">For each item, identify the tensor's <strong>shape</strong> and <strong>dimension</strong> (only 0D, 1D, or 2D tensors are shown). Click "Reveal Answer" to check.</p>
+
+    <section id="questions" class="questions" aria-live="polite"></section>
+
+    
+
+    <script>
+      // Utility: generate a random integer in [min,max]
+      const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+      // Generate a random tensor shape (rank 0..2) and sizes 1..5
+      // We restrict to 0D, 1D, or 2D tensors per user request
+      function randomShape(maxRank = 2) {
+        const rank = randInt(0, maxRank);
+        const shape = [];
+        for (let i = 0; i < rank; i++) shape.push(randInt(1, 5));
+        return shape;
+      }
+
+      // Create nested arrays given a shape, filled with small integers
+      function makeNested(shape) {
+        if (!shape || shape.length === 0) return randInt(-9, 9);
+        const [n, ...rest] = shape;
+        const arr = [];
+        for (let i = 0; i < n; i++) arr.push(makeNested(rest));
+        return arr;
+      }
+
+      // Format a nested JS array as PyTorch-like tensor text
+      function formatTensorPyTorch(value) {
+        if (!Array.isArray(value)) return `tensor(${value})`;
+        const inner = formatArray(value);
+        return `tensor(${inner})`;
+      }
+
+      function formatArray(a) {
+        if (!Array.isArray(a)) return String(a);
+        return '[' + a.map(formatArray).join(', ') + ']';
+      }
+
+      // Format shape as Python tuple (with trailing comma for len=1)
+      function formatShapeTuple(shape) {
+        if (!shape || shape.length === 0) return '()';
+        if (shape.length === 1) return `(${shape[0]},)`;
+        return '(' + shape.join(', ') + ')';
+      }
+
+      function createQuestionCard(idx, shape, tensorStr) {
+        const container = document.createElement('div');
+        container.className = 'card';
+
+        const qnum = document.createElement('div');
+        qnum.className = 'small';
+        qnum.textContent = `Question ${idx + 1}`;
+
+        const pre = document.createElement('pre');
+        pre.textContent = tensorStr;
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+
+        const reveal = document.createElement('button');
+        reveal.textContent = 'Reveal Answer';
+
+        const answer = document.createElement('div');
+        answer.className = 'answer';
+        answer.innerHTML = `<strong>Shape:</strong> ${formatShapeTuple(shape)} &nbsp; <strong>Dimension:</strong> ${shape.length}`;
+
+        reveal.addEventListener('click', () => {
+          const shown = answer.style.display === 'block';
+          answer.style.display = shown ? 'none' : 'block';
+          reveal.textContent = shown ? 'Reveal Answer' : 'Hide Answer';
+        });
+
+        meta.appendChild(reveal);
+
+        container.appendChild(qnum);
+        container.appendChild(pre);
+        container.appendChild(meta);
+        container.appendChild(answer);
+
+        return container;
+      }
+
+      // Create N questions and render
+      function generateQuestions(n = 10) {
+        const root = document.getElementById('questions');
+        root.innerHTML = '';
+        for (let i = 0; i < n; i++) {
+          const shape = randomShape(2);
+          const nested = makeNested(shape);
+          const tensorStr = formatTensorPyTorch(nested);
+          const card = createQuestionCard(i, shape, tensorStr);
+          root.appendChild(card);
+        }
+      }
+
+      document.getElementById('regen').addEventListener('click', () => generateQuestions(10));
+
+      // Initialize on load
+      window.addEventListener('DOMContentLoaded', () => generateQuestions(10));
+    </script>
+  </body>
+</html>
